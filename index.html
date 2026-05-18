@@ -622,19 +622,18 @@
 <div id="modalCfg" class="modal-overlay hidden" role="dialog"
   aria-modal="true" aria-label="설정" onclick="handleModalBg(event)">
   <div class="modal-box">
-    <h2>⚙ AI 연결 설정</h2>
+    <h2>⚙ 고급 설정</h2>
     <p class="modal-desc">
-      AI 보고서 변환 기능을 사용하려면 Cloudflare Worker 주소가 필요합니다.<br>
-      Cloudflare 대시보드에서 배포된 Worker URL을 복사해 입력해주세요.
+      AI 서버 주소가 자동으로 설정되어 있습니다.<br>
+      주소가 변경된 경우에만 아래에서 수정하세요.
     </p>
     <div class="field">
-      <label class="field-lbl" for="cfgUrl">Worker 주소</label>
+      <label class="field-lbl" for="cfgUrl">AI 서버 주소</label>
       <input type="text" id="cfgUrl"
-        placeholder="https://maul-webapp-proxy.xxx.workers.dev"
         autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="modal-btn-row">
-      <button class="btn btn-s" onclick="closeSettings()">닫기</button>
+      <button class="btn btn-s" onclick="resetWorkerUrl()">기본값으로</button>
       <button class="btn btn-p" onclick="saveSettings()">저장</button>
     </div>
   </div>
@@ -653,9 +652,11 @@
 /* ============================================================
    상태
 ============================================================ */
+const WORKER_URL = 'https://maul-webapp-proxy.maul-webapp.workers.dev';
+
 const state = {
   step:     1,
-  workerUrl:'',
+  workerUrl: localStorage.getItem('nadri_worker') || WORKER_URL,
   photos:   [],   // [{ id, dataUrl }]
   aiText:   '',
 };
@@ -664,8 +665,6 @@ const state = {
    초기화
 ============================================================ */
 function initApp() {
-  state.workerUrl = localStorage.getItem('nadri_worker') || '';
-
   // 오늘 날짜 기본 설정
   const t = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -772,6 +771,13 @@ function saveSettings() {
 }
 function handleModalBg(e) { if (e.target === e.currentTarget) closeSettings(); }
 
+function resetWorkerUrl() {
+  localStorage.removeItem('nadri_worker');
+  state.workerUrl = WORKER_URL;
+  document.getElementById('cfgUrl').value = WORKER_URL;
+  toast('기본값으로 초기화되었습니다.');
+}
+
 /* ============================================================
    사진 처리
 ============================================================ */
@@ -841,12 +847,6 @@ function uid() {
    AI 변환 (Cloudflare Worker → Anthropic API)
 ============================================================ */
 async function callAI() {
-  if (!state.workerUrl) {
-    toast('오른쪽 위 ⚙ 설정에서 Worker 주소를 먼저 입력해주세요.');
-    openSettings();
-    return;
-  }
-
   const q1 = v('q1'), q2 = v('q2'), q3 = v('q3');
   if (!q1 && !q2 && !q3) {
     toast('2단계로 돌아가서 활동 기록을 입력해주세요.');
